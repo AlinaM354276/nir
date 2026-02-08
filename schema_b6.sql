@@ -1,12 +1,3 @@
-CREATE TABLE users (
+CREATE TABLE roles (
     id INTEGER PRIMARY KEY
-);
-
-CREATE TABLE customers (
-    id INTEGER PRIMARY KEY
-);
-
-CREATE TABLE orders (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER REFERENCES customers(id)
 );

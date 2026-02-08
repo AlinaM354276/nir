@@ -94,12 +94,6 @@ class SQLParser:
                         column.attributes["foreign_key"]
                     )
 
-        print(
-            "[DEBUG PARSER FKS]",
-            table.name,
-            table.attributes.get("foreign_keys")
-        )
-
         return table
 
     # ==========================================================

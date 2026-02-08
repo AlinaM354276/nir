@@ -167,3 +167,35 @@ class SchemaGraph:
 
         return None
 
+    def find_cycles(self):
+        """
+        Находит циклы зависимостей в графе.
+        Используется для правила R7.
+        """
+
+        visited = set()
+        stack = set()
+        cycles = []
+
+        def visit(v_id, path):
+            if v_id in stack:
+                cycle_start = path.index(v_id)
+                cycles.append([self.vertices[i] for i in path[cycle_start:]])
+                return
+
+            if v_id in visited:
+                return
+
+            visited.add(v_id)
+            stack.add(v_id)
+
+            for e in self.edges:
+                if e.src == v_id:
+                    visit(e.dst, path + [e.dst])
+
+            stack.remove(v_id)
+
+        for vid in self.vertices:
+            visit(vid, [vid])
+
+        return cycles

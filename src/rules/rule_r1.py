@@ -2,53 +2,56 @@ from typing import List
 from src.rules.base import BaseRule, ConflictLevel
 from src.core.models import RelationType, ObjectType
 from src.comparison.delta import Delta
+from src.graph.schema_graph import SchemaGraph
 
 
 class RuleR1(BaseRule):
     RULE_ID = "R1"
-    RULE_NAME = "Удаление объекта с зависимостями"
-    RULE_DESCRIPTION = "Удаление таблицы/колонки, на которую есть ссылки"
+    RULE_NAME = "Удаление таблицы с зависимостями"
+    RULE_DESCRIPTION = (
+        "Удаление таблицы, на которую существуют внешние ссылки "
+        "в исходной версии схемы."
+    )
+    DEFAULT_LEVEL = ConflictLevel.CRITICAL
 
-    def apply(self, delta, graph_a, graph_b):
+    def apply(
+        self,
+        delta: Delta,
+        graph_a: SchemaGraph,
+        graph_b: SchemaGraph,
+    ) -> List[dict]:
+
         conflicts = []
-
-        print(
-            "[DEBUG REFERENCES]",
-            [(e.src, e.dst, e.relation) for e in graph_a.edges if e.relation == RelationType.REFERENCES]
-        )
 
         for removed in delta.objects_removed:
 
-            # 1. находим таблицу
+            # R1 применим ТОЛЬКО к таблицам
+            if removed.type != ObjectType.TABLE:
+                continue
+
             table = graph_a.get_table_of_object(removed)
             if table is None:
                 continue
 
-            # 2. ищем REFERENCES к таблице
-            incoming = []
-            for edge in graph_a.edges:
-                if (
-                        edge.dst == table.id
-                        and edge.relation == RelationType.REFERENCES
-                ):
-                    incoming.append(edge)
+            incoming_refs = [
+                e for e in graph_a.edges
+                if e.relation == RelationType.REFERENCES
+                and e.dst == table.id
+                and e.src != table.id
+            ]
 
-            # 3. если есть — конфликт
-            if incoming:
+            if incoming_refs:
                 conflicts.append({
-                    "rule": "R1",
-                    "level": "CRITICAL",
+                    "rule": self.RULE_ID,
+                    "level": self.DEFAULT_LEVEL.value,
                     "message": (
-                        f"Removed object {removed.name} "
-                        f"but table {table.name} is referenced"
+                        f"Таблица '{table.name}' удалена, "
+                        f"но в исходной версии схемы на неё существуют внешние ссылки."
                     ),
                     "details": {
-                        "removed_object": removed.name,
                         "table": table.name,
-                        "incoming_refs": len(incoming),
+                        "incoming_refs": len(incoming_refs),
                     },
                 })
 
         return conflicts
-
-

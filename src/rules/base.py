@@ -88,7 +88,16 @@ class BaseRule(ABC):
         for c in trimmed:
             c.setdefault("rule", self.RULE_ID)
             c.setdefault("rule_name", self.RULE_NAME)
-            c.setdefault("level", default_level)
+            # c.setdefault("level", default_level)
+
+            level = c.get("level", default_level)
+
+            if isinstance(level, ConflictLevel):
+                level = level.value
+            else:
+                level = str(level).lower()
+
+            c["level"] = level
 
             if not include_details and "details" in c:
                 c.pop("details", None)

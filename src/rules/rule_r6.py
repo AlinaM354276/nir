@@ -6,10 +6,6 @@ from src.comparison.delta import Delta
 
 
 class RuleR6(BaseRule):
-    """
-    R6: Добавление NOT NULL без DEFAULT.
-    """
-
     RULE_ID = "R6"
     RULE_NAME = "Add NOT NULL without default"
     RULE_DESCRIPTION = "Detects adding NOT NULL constraint without default."
@@ -19,23 +15,23 @@ class RuleR6(BaseRule):
         conflicts = []
 
         for mod in delta.modified_by_type(ObjectType.COLUMN):
-            if "is_nullable" not in mod.changed_fields:
-                continue
+            before = mod.before.attributes or {}
+            after = mod.after.attributes or {}
 
             if (
-                mod.before.attributes.get("is_nullable") is True
-                and mod.after.attributes.get("is_nullable") is False
-                and "default" not in (mod.after.attributes or {})
+                before.get("not_null") is False
+                and after.get("not_null") is True
+                and "default" not in after
             ):
                 conflicts.append({
                     "rule": self.RULE_ID,
                     "level": self.DEFAULT_LEVEL.value,
                     "message": (
-                        f"Column {mod.after.get_full_name()} "
+                        f"Column {mod.after.name} "
                         f"became NOT NULL without DEFAULT"
                     ),
                     "details": {
-                        "column": mod.after.get_full_name(),
+                        "column": mod.after.name,
                     },
                 })
 

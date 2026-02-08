@@ -3,5 +3,5 @@ CREATE TABLE users (
 );
 
 CREATE TABLE orders (
-    user_id INTEGER REFERENCES users(id)
+    id INTEGER PRIMARY KEY
 );

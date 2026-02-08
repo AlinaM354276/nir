@@ -1,8 +1,8 @@
 CREATE TABLE users (
-    id INTEGER PRIMARY KEY
+    id INTEGER PRIMARY KEY,
+    role_id INTEGER REFERENCES roles(id)
 );
 
-CREATE TABLE orders (
-    id INTEGER PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id)
+CREATE TABLE roles (
+    id INTEGER PRIMARY KEY
 );

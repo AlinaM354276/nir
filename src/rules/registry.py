@@ -112,7 +112,22 @@ class RuleRegistry:
                 if not isinstance(processed, list):
                     processed = []
 
+                # for c in processed:
+                #     c["rule_info"] = rule.get_info()
+
                 for c in processed:
+                    level = c.get("level")
+
+                    # --- Жёсткая нормализация ---
+                    if isinstance(level, ConflictLevel):
+                        c["level"] = level.value
+                    else:
+                        c["level"] = str(level).lower()
+
+                    # страховка от мусора
+                    if c["level"] not in {lvl.value for lvl in ConflictLevel}:
+                        c["level"] = ConflictLevel.MEDIUM.value
+
                     c["rule_info"] = rule.get_info()
 
                 all_conflicts.extend(processed)
@@ -127,13 +142,32 @@ class RuleRegistry:
                         "total_reported": len(processed),
                     }
                 })
+            # except Exception as e:
+            #     stats.append({
+            #         "rule_id": rule.RULE_ID,
+            #         "rule_name": rule.RULE_NAME,
+            #         "applied": False,
+            #         "error": str(e),
+            #         "conflicts_found": 0
+            #     })
             except Exception as e:
+                all_conflicts.append({
+                    "rule": "SYSTEM",
+                    "rule_name": "Rule execution error",
+                    "level": ConflictLevel.CRITICAL.value,
+                    "message": f"Ошибка выполнения правила {rule.RULE_ID}: {str(e)}",
+                    "details": {
+                        "rule_id": rule.RULE_ID,
+                        "exception_type": type(e).__name__,
+                    }
+                })
+
                 stats.append({
                     "rule_id": rule.RULE_ID,
                     "rule_name": rule.RULE_NAME,
-                    "applied": False,
+                    "enabled": True,
                     "error": str(e),
-                    "conflicts_found": 0
+                    "conflicts_found": 1
                 })
 
         original_total = len(all_conflicts)
@@ -153,8 +187,28 @@ class RuleRegistry:
                 }
             })
 
+        # summary = {
+        #     "total_conflicts": len(trimmed),
+        #     "total_rules": len(self._rules),
+        #     "enabled_rules": len(enabled),
+        # }
+
+        critical_count = sum(
+            1 for c in trimmed
+            if c.get("level") == ConflictLevel.CRITICAL.value
+        )
+
         summary = {
             "total_conflicts": len(trimmed),
+            "critical_conflicts": critical_count,
+            "high_conflicts": sum(1 for c in trimmed if c.get("level") == ConflictLevel.HIGH.value),
+            "medium_conflicts": sum(1 for c in trimmed if c.get("level") == ConflictLevel.MEDIUM.value),
+            "low_conflicts": sum(1 for c in trimmed if c.get("level") == ConflictLevel.LOW.value),
+
+            "has_conflicts": len(trimmed) > 0,
+            "has_critical_conflicts": critical_count > 0,
+            "merge_blocked": critical_count > 0,
+
             "total_rules": len(self._rules),
             "enabled_rules": len(enabled),
         }

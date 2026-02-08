@@ -1,8 +1,7 @@
 CREATE TABLE users (
-    id TEXT PRIMARY KEY
+    id BIGINT PRIMARY KEY
 );
 
 CREATE TABLE orders (
-    id INTEGER PRIMARY KEY,
     user_id INTEGER REFERENCES users(id)
 );

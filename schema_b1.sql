@@ -1,8 +1,9 @@
-CREATE TABLE users (
-    email INTEGER PRIMARY KEY
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id)
 );
 
-CREATE TABLE logins (
-    id SERIAL PRIMARY KEY,
-    email TEXT REFERENCES users(email)
+CREATE TABLE payments (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id)
 );
